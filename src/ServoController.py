@@ -30,18 +30,18 @@ class ServoController:
         self.arduino.close()
 
 # Example test for running
-if __name__ == "__main__":
-    controller = ServoController()
-    try:
-        while True:
-            try:
-                coords = input("Enter coordinates in format x,y: ")
-                x, y = map(int, coords.split(',')) # maps x and y
+# if __name__ == "__main__":
+#     controller = ServoController()
+#     try:
+#         while True:
+#             try:
+#                 coords = input("Enter coordinates in format x,y: ")
+#                 x, y = map(int, coords.split(',')) # maps x and y
 
-                # Send the coord to arduino IDE
-                response = controller.send_coordinates(x, y)
-            except ValueError:
-                print("Wrong format")
-    except KeyboardInterrupt:
-        print("\nClosing connection")
-        controller.close()
+#                 # Send the coord to arduino IDE
+#                 response = controller.send_coordinates(x, y)
+#             except ValueError:
+#                 print("Wrong format")
+#     except KeyboardInterrupt:
+#         print("\nClosing connection")
+#         controller.close()

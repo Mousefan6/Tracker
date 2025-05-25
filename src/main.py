@@ -6,6 +6,7 @@ import requests
 import time
 
 from src.FaceTracker import FaceTracker
+from src.ServoController import ServoController
 
 # === Logger Setup ===
 import logging
@@ -14,13 +15,16 @@ logger = logging.getLogger(__name__)
 
 def main():
     camera = cv2.VideoCapture(STREAM_URL);
+    controller = ServoController(port='COM5')
     if not camera.isOpened():
         print("Error: Could not open video stream.");
         sys.exit(1);
     
     faceTracker = FaceTracker();
 
-    previous_angle = 0;  # Initial servo position
+    # Initial servo positions
+    previous_x_angle = 0;
+    previous_y_angle = 0;
 
     try:
         while True:
@@ -41,17 +45,29 @@ def main():
             
             left_eye, right_eye, midpoint = detect_eyes; # Dereference the tuple
             
-            # Map midpoint to servo angle
+            # Get midpoint for servo angles
             x_norm = midpoint[0] / frame.shape[1];
-            target_angle = int(SERVO_MIN + (SERVO_MAX - SERVO_MIN) * x_norm);
+            y_norm = midpoint[1] / frame.shape[0];
+
+            # Calculate servo angles
+            x_angle = int(SERVO_X_MIN + (SERVO_X_MAX - SERVO_X_MIN) * x_norm);
+            y_angle = int(SERVO_Y_MIN + (SERVO_Y_MAX - SERVO_Y_MIN) * y_norm);
             
             # Movement smoothing
-            smoothed_angle = int(previous_angle + SERVO_SMOOTHING * (target_angle - previous_angle));
-            previous_angle = smoothed_angle;
+            smoothed_x = int(previous_x_angle + SERVO_SMOOTHING * (x_angle - previous_x_angle));
+            smoothed_y = int(previous_y_angle + SERVO_SMOOTHING * (y_angle - previous_y_angle));
+            
+            # Update previous angles
+            previous_x_angle = smoothed_x;
+            previous_y_angle = smoothed_y;
+
+            # Send data to arduino
+            response = controller.send_coordinates(smoothed_x, smoothed_y)
+            print(response)
 
             # Visualization of midpoint of eyes
             cv2.circle(frame, midpoint, 3, (255, 0, 0), -1);
-            cv2.putText(frame, f'Angle: {smoothed_angle}', (10, 30), 
+            cv2.putText(frame, f'Angle: ({smoothed_x}, {smoothed_y})', (10, 30), 
                         cv2.FONT_HERSHEY_SIMPLEX, 0.7, (0, 255, 0), 2);
 
             cv2.imshow("Head Tracker", frame);
@@ -64,6 +80,5 @@ def main():
         camera.release();
         cv2.destroyAllWindows();
 
-
 if __name__ == "__main__":
-    main();
+    main()
