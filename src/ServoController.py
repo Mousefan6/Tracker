@@ -1,30 +1,36 @@
 # This file is for testing the servos for x and y direction to see
 # if they are responsive and connects the arduino IDE
+
 import serial
 import time
+import struct
+import logging
+
+logger = logging.getLogger(__name__)
 
 class ServoController:
     def __init__(self, port='COM5', baudrate=9600):
         self.arduino = serial.Serial(port, baudrate, timeout=0.1)
         time.sleep(2)
 
+        logger.info(f"Connected to Arduino on {port} at {baudrate} baud")
+        self.arduino.flushInput()
+        self.arduino.flushOutput()
+
     def send_coordinates(self, x, y):
-        coord = f"{x}, {y},\n"
-        self.arduino.write(coord.encode('utf-8'))
+        x = max(0, min(180, x))  # Constrain to servo range
+        y = max(0, min(180, y))
+        self.arduino.write(struct.pack('BB', x, y))  # 'BB' = 2 unsigned bytes for faster communication
+        self.arduino.flush()
+        # For debugging    
+        logger.debug(f"Sent coordinates: X={x}, Y={y}")
         return self._read_response()
     
     def _read_response(self):
-        response = []
-        start_time = time.time()
-        
-        # Read for up to 1 second
-        while time.time() - start_time < 1:
-            if self.arduino.in_waiting > 0:
-                line = self.arduino.readline().decode('utf-8').strip()
-                if line:
-                    response.append(line)
-        
-        return '\n'.join(response) if response else "No response"
+        # Optionally read response from arduino
+        if self.arduino.in_waiting > 0:
+            return self.arduino.readline().decode().strip()
+        return None
     
     def close(self):
         self.arduino.close()

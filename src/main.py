@@ -20,11 +20,22 @@ def main():
         print("Error: Could not open video stream.");
         sys.exit(1);
     
+    camera.set(cv2.CAP_PROP_FRAME_WIDTH, 640)
+    camera.set(cv2.SpecialFilter, 2)
+    camera.set(cv2.CAP_PROP_FRAME_HEIGHT, 480)
+    camera.set(cv2.CAP_PROP_FPS, 30)
+    
     faceTracker = FaceTracker();
 
     # Initial servo positions
-    previous_x_angle = 0;
-    previous_y_angle = 0;
+    previous_x_angle = 90;
+    previous_y_angle = 45;
+
+    # Bring servos to default positions
+    controller.send_coordinates(previous_x_angle, previous_y_angle)
+    time.sleep(0.5)
+
+    frame_count = 0 # To avoid overloading arduino
 
     try:
         while True:
@@ -36,6 +47,8 @@ def main():
             if frame is None or frame.size == 0:
                 print("Dirty frame received. Skipping...");
                 continue
+
+            frame_count += 1
             
             detect_eyes = faceTracker.detect_eyes(frame);
             if detect_eyes is None: # No face detected display as normal
@@ -62,8 +75,10 @@ def main():
             previous_y_angle = smoothed_y;
 
             # Send data to arduino
-            response = controller.send_coordinates(smoothed_x, smoothed_y)
-            print(response)
+            if controller.send_coordinates(smoothed_x, smoothed_y):
+                logger.debug(f"Sent servo angles: X={smoothed_x}, Y={smoothed_y}")
+            else:
+                logger.warning("Failed to send servo coordinates")
 
             # Visualization of midpoint of eyes
             cv2.circle(frame, midpoint, 3, (255, 0, 0), -1);
@@ -76,6 +91,12 @@ def main():
     except KeyboardInterrupt:
         logging.info("KeyboardInterrupt. Exiting...");
     finally:
+        if controller:
+            # Return servos to center position before closing
+            controller.send_coordinates(90, 45)
+            time.sleep(0.5)
+            controller.close()
+            
         # Release resources
         camera.release();
         cv2.destroyAllWindows();
