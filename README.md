@@ -50,7 +50,7 @@ Ensure that your current working directory is set to the project's root director
 
 ### Compiling
 ```sh
-python main.py
+python -m src.main
 ```
 
 
