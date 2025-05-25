@@ -57,7 +57,8 @@ python main.py
 ## Troubleshooting
 - Ensure that you have activated the virtual environment with the installed packages.
 - Ensure CMake is installed on your system.
-- Ensure `shape_predictor_68_face_landmarks.dat` exists.
+- Ensure CMake bin is configured to `Environment variables > System variables > Path`.
+- Check for `shape_predictor_68_face_landmarks.dat` existence.
 - Clear `__pycache__` and compile again.
 
 
