@@ -3,3 +3,4 @@ cmake
 dlib
 pyserial
 numpy
+requests
